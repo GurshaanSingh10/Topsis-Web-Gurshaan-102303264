@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TOPSIS Web Service - Gurshaan Bajwa 102303264</title>
+
+<style>
+body{
+    margin:0;
+    padding:0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg,#1f1c2c,#928dab);
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.card{
+    background:#fff;
+    padding:30px 40px;
+    border-radius:12px;
+    width:360px;
+    box-shadow:0 15px 40px rgba(0,0,0,0.3);
+}
+
+h2{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+label{
+    font-weight:bold;
+    display:block;
+    margin-top:12px;
+}
+
+input{
+    width:100%;
+    padding:8px;
+    margin-top:5px;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+
+button{
+    width:100%;
+    margin-top:20px;
+    padding:10px;
+    border:none;
+    border-radius:8px;
+    background:#5b2cff;
+    color:#fff;
+    font-size:16px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#431bd6;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>TOPSIS Web Service</h2>
+<p style="text-align:center; font-size:14px; color:#555;">Gurshaan Bajwa | Roll No: 102303264</p>
+
+<label>Upload CSV File</label>
+<input type="file" id="file">
+
+<label>Weights</label>
+<input id="weights" value="1,1,1,1">
+
+<label>Impacts</label>
+<input id="impacts" value="+,+,-,+">
+
+<button onclick="run()">Get Result</button>
+</div>
+
+<script>
+function run(){
+    const file = document.getElementById("file").files[0];
+    if(!file){ alert("Upload CSV file"); return; }
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const rows = e.target.result.trim().split("\n").map(r=>r.split(","));
+        const header = rows[0];
+        const data = rows.slice(1);
+
+        const w = document.getElementById("weights").value.split(",").map(Number);
+        const imp = document.getElementById("impacts").value.split(",");
+
+        let m = data.map(r=>r.slice(1).map(Number));
+
+        let norm=[];
+        for(let j=0;j<m[0].length;j++){
+            let s=0; for(let i=0;i<m.length;i++) s+=m[i][j]*m[i][j];
+            norm.push(Math.sqrt(s));
+        }
+
+        let weighted = m.map(r=>r.map((v,j)=>v/norm[j]*w[j]));
+
+        let best=[], worst=[];
+        for(let j=0;j<imp.length;j++){
+            let col = weighted.map(r=>r[j]);
+            if(imp[j]==="+"){ best.push(Math.max(...col)); worst.push(Math.min(...col)); }
+            else{ best.push(Math.min(...col)); worst.push(Math.max(...col)); }
+        }
+
+        let score = weighted.map(r=>{
+            let d1=0,d2=0;
+            for(let j=0;j<r.length;j++){
+                d1+=(r[j]-best[j])**2;
+                d2+=(r[j]-worst[j])**2;
+            }
+            return Math.sqrt(d2)/(Math.sqrt(d1)+Math.sqrt(d2));
+        });
+
+        let rank=[...score].map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]).map((x,i)=>[x[1],i+1]);
+
+        let out = header.join(",")+",Topsis Score,Rank\n";
+        data.forEach((r,i)=>{
+            out+=r.join(",")+","+score[i]+","+rank.find(x=>x[0]==i)[1]+"\n";
+        });
+
+        const blob = new Blob([out],{type:"text/csv"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "result.csv";
+        a.click();
+    };
+    reader.readAsText(file);
+}
+</script>
+
+</body>
+</html>
