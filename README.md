@@ -14,3 +14,4 @@ Upload to GitHub, connect to Vercel, set environment variables:
 - SENDER_PASSWORD
 
 Then deploy.
+Deployed on Vercel
